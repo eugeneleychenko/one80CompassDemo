@@ -4,6 +4,9 @@ import ShuffleIcon from '@mui/icons-material/Shuffle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InputAdornment from '@mui/material/InputAdornment';
 import './App.css';
+import DOMPurify from 'dompurify';
+import { useNavigate } from 'react-router-dom';
+
 
 function Chat() {
   const [inputValue, setInputValue] = useState('');
@@ -13,13 +16,14 @@ function Chat() {
 
   // making chat look good
   useEffect(() => {
-    if (chatContainerRef.current) {
-      const isScrolledToBottom = chatContainerRef.current.scrollHeight - chatContainerRef.current.clientHeight <= chatContainerRef.current.scrollTop + (chatContainerRef.current.clientHeight * 0.75);
+    const chat = chatContainerRef.current;
+    if (chat) {
+      const isScrolledToBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 1; // 1 pixel of leeway
       if (isScrolledToBottom) {
-        chatContainerRef.current.scrollBy(0, 40);
+        chat.scrollBy(0, 800);
       }
     }
-  });
+  }, [messages]); // Run this effect when 'messages' changes
 
   const handleSendClick = async (inputValue) => {
     if (inputValue.trim()) {
@@ -32,7 +36,26 @@ function Chat() {
       // Add the friend's welcome message
       const newFriendMessage = {
         sender: 'friend',
-        text: 'Welcome to the world'
+        text: (
+          <div dangerouslySetInnerHTML={{
+            __html: `<strong>For your project, you can approach it through the following:</strong><br>
+
+<br style="line-height: 0">
+<em>Statement Starters</em>
+<p style="line-height: 0; font-size: 75%">Announce the driving question using Statement Starters</p><br style="line-height: 0">
+<em>Abstraction Laddering</em>
+<p style="line-height: 0; font-size: 75%">Validate that you truly understand the problem</p><br style="line-height: 0">
+<em>Stakeholder Mapping</em>
+<p style="line-height: 0; font-size: 75%">Focus on people using Stakeholder Mapping</p><br style="line-height: 0">
+<em>Interviewing</em>
+<p style="line-height: 0; font-size: 75%">Refine understanding by hearing directly from experts using Interviewing.</p><br style="line-height: 0">
+<em>Contextual inquiry</em>
+<p style="line-height: 0; font-size: 75%">Watch the user in real-time to understand the problem</p><br style="line-height: 0">
+<em>Rose, Thorn, Bud</em>
+<p style="line-height: 0; font-size: 75%">Document Contextual Inquiry and Interview results with Rose, Thorn, Bud</p><br style="line-height: 0">
+<em>Affinity Clustering</em>
+<p style="line-height: 0; font-size: 75%">Group related insights from the Interview</p>`
+          }} />)
       };
 
       // Update the messages state with the new messages
@@ -103,15 +126,28 @@ function Chat() {
         </Grid>
         <Grid item xs={9} ref={chatContainerRef} sx={{ height: '100%', overflowY: 'auto', paddingBottom: '180px' /* Adjust this value as needed */ }}>
           <List sx={{ padding: 0 }}>
-              {messages.map((message, index) => (
-              <React.Fragment key={index}>
-                <ListItem sx={{ justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start' }}>
-                    <Paper elevation={3} sx={{ padding: '10px', maxWidth: '75%', width: '75%', backgroundColor: message.sender === 'user' ? '#e0f7fa' : '#fff', marginLeft: message.sender === 'user' ? 'auto' : 0, marginRight: message.sender === 'friend' ? 'auto' : 0 }}>
-                    <Typography variant="body1">{message.text}</Typography>
-                    </Paper>
-                </ListItem>
-              </React.Fragment>
-              ))}
+          {messages.map((message, index) => (
+  <React.Fragment key={index}>
+    <ListItem sx={{ justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start' }}>
+      <Paper elevation={3} sx={{ padding: '10px', maxWidth: '75%', width: '75%', backgroundColor: message.sender === 'user' ? '#e0f7fa' : '#fff', marginLeft: message.sender === 'user' ? 'auto' : 0, marginRight: message.sender === 'friend' ? 'auto' : 0 }}>
+        <Typography variant="body1">
+          {typeof message.text === 'string' ? (
+            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.text) }} />
+          ) : (
+            message.text
+          )}
+        </Typography>
+      </Paper>
+    </ListItem>
+    {message.sender === 'friend' && index === messages.length - 1 && (
+      <ListItem sx={{ justifyContent: 'left' }}>
+        <Button variant="contained" color="primary">
+          Create Custom Journey from Answer
+        </Button>
+      </ListItem>
+    )}
+  </React.Fragment>
+))}
           </List>
         </Grid>
           <Grid item xs={12} sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px', paddingLeft: '400px' }}>
