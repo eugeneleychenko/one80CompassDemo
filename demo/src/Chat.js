@@ -1,213 +1,141 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Accordion, AccordionSummary, AccordionDetails, Typography, Divider, Grid } from '@mui/material';
+import React, { useState, useRef, useEffect } from 'react';
+import { Box, Button, Container, Grid, List, ListItem, Paper, TextField, Typography, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ChatInterface from './ChatInterface';
+import InputAdornment from '@mui/material/InputAdornment';
+import './App.css';
 
 function Chat() {
-  const [topics, setTopics] = useState([]);
-  const [showDetails, setShowDetails] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const chatContainerRef = useRef(null);
   const [methods, setMethods] = useState([]);
-  const [currentAlts, setCurrentAlts] = useState({});
-  const [data, setData] = useState();
-  const [shuffleCount, setShuffleCount] = useState({});
   const [messages, setMessages] = useState([]);
 
-  const handleSendClick = async (inputValue) => {
-    // ... implementation of handleSendClick
-    // This function now needs to accept `inputValue` as a parameter
-  };
-
+  // making chat look good
   useEffect(() => {
-    const cachedData = sessionStorage.getItem('cachedData');
-    if (cachedData) {
-      const parsedData = JSON.parse(cachedData);
-      setData(parsedData);
-      processFetchedData(parsedData); // Process the cached data to extract methods and alternatives
-    } else {
-      // Fetching data from the API and processing it
-      fetch('https://gs.jasonaa.me/?url=https://docs.google.com/spreadsheets/d/e/2PACX-1vSmp889ksBKKVVwpaxhlIzpDzXNOWjnszEXBP7SC5AyoebSIBFuX5qrcwwv6ud4RCYw2t_BZRhGLT0u/pubhtml?gid=1980586524&single=true')
-        .then(response => response.json())
-        .then(fetchedData => {
-          sessionStorage.setItem('cachedData', JSON.stringify(fetchedData));
-          setData(fetchedData);
-          processFetchedData(fetchedData); // Process the fetched data to extract methods and alternatives
-        })
-        .catch(error => {
-          console.error('Fetching data failed:', error);
-        });
-    }
-  }, []);
-
-  // Function to process data and extract methods and alternatives
-  const processFetchedData = (fetchedData) => {
-    if (fetchedData && Array.isArray(fetchedData)) {
-      // Extract unique methods and shuffle them
-      let uniqueMethods = fetchedData.map(item => item.Uniques).filter(unique => unique);
-      for (let i = uniqueMethods.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [uniqueMethods[i], uniqueMethods[j]] = [uniqueMethods[j], uniqueMethods[i]];
+    if (chatContainerRef.current) {
+      const isScrolledToBottom = chatContainerRef.current.scrollHeight - chatContainerRef.current.clientHeight <= chatContainerRef.current.scrollTop + (chatContainerRef.current.clientHeight * 0.75);
+      if (isScrolledToBottom) {
+        chatContainerRef.current.scrollBy(0, 40);
       }
-  
-      // Only pull in 5 random Unique key values
-      uniqueMethods = uniqueMethods.slice(0, 5);
-  
-      // Map each unique method to its alternatives
-      const altsMapping = uniqueMethods.reduce((acc, unique) => {
-        const alts = fetchedData
-          .filter(item => item.Uniques === unique)
-          .map(item => ({ Alt1: item['Alt 1'], Alt2: item['Alt 2'], Alt3: item['Alt 3'] }))
-          .reduce((altsAcc, item) => {
-            // Flatten the alternatives into a single array and filter out empty strings
-            return [...altsAcc, item.Alt1, item.Alt2, item.Alt3].filter(alt => alt);
-          }, []);
-    
-        acc[unique] = alts;
-        return acc;
-      }, {});
-  
-      setMethods(uniqueMethods);
-      setCurrentAlts(altsMapping);
-      setShuffleCount(uniqueMethods.reduce((acc, method) => {
-        acc[method] = 0;
-        return acc;
-      }, {}));
+    }
+  });
+
+  const handleSendClick = async (inputValue) => {
+    if (inputValue.trim()) {
+      // Add the user's message
+      const newUserMessage = {
+        sender: 'user',
+        text: inputValue
+      };
+
+      // Add the friend's welcome message
+      const newFriendMessage = {
+        sender: 'friend',
+        text: 'Welcome to the world'
+      };
+
+      // Update the messages state with the new messages
+      setMessages(prevMessages => [...prevMessages, newUserMessage, newFriendMessage]);
+
+      // Clear the input field
+      setInputValue('');
+
+      // Set the methods to be displayed
+      setMethods([
+        {
+          name: 'Statement Starters',
+          description: "The 'Statement Starter' method in Product Thinking is a technique used to spark innovative and collaborative discussions about a product or service."
+        },
+        {
+          name: 'Abstraction Laddering',
+          description: "Abstraction Laddering in Product Thinking is a method that facilitates a deeper understanding of product issues by exploring them at different levels of abstraction. "
+        },
+        {
+          name: 'Stakeholder Mapping',
+          description: "Stakeholder Mapping in Product Thinking is a strategic method for identifying and organizing all relevant individuals or groups involved with a product, such as customers, team members, investors, and suppliers. "
+        },
+        {
+          name: 'Interviewing',
+          description: "Interviewing is a key method for gathering qualitative insights, where structured or semi-structured conversations are held with users or potential customers to understand their needs, experiences, and perceptions. "
+        },
+        {
+          name: 'Contextual inquiry',
+          description: "Contextual Inquiry in Product Thinking is a research approach where user behavior is observed and analyzed in their natural environment, providing genuine insights into how they interact with a product or service in real-life situations."
+        },
+        {
+          name: 'Rose, Thorn, Bud',
+          description: "The 'Rose, Thorn, Bud' method in Product Thinking is a straightforward approach for evaluating products, where 'Rose' represents the positive aspects or what's working well, 'Thorn' identifies the challenges or areas needing improvement, and 'Bud' signifies potential opportunities or ideas for growth."
+        },
+        {
+          name: 'Affinity Clustering',
+          description: "Affinity Clustering in Product Thinking is a method used to organize and interpret large volumes of qualitative data by grouping similar items to reveal patterns and themes."
+        }
+      ]);
+
+      // Fetch the descriptions for the methods
       
-    } else {
-      // Handle the case where data is not as expected
-      console.error('Data is not in the expected format:', fetchedData);
     }
-    console.log(currentAlts)
-  };
-
-  const handleShuffleClick = (methodName) => {
-    // Ensure we have the original alternatives to shuffle
-    const originalAlternatives = currentAlts[methodName] || [];
-  
-    if (originalAlternatives.length === 0) {
-      console.error('No alternatives found for method:', methodName); // Debugging log
-      return;
-    }
-  
-    // Log the original alternatives for the method
-    console.log(`Original alternatives for "${methodName}":`, originalAlternatives);
-  
-    // Shuffle the original alternatives
-    let shuffledAlternatives = shuffleAlternatives(originalAlternatives);
-    
-    // Update the shuffle count for the method
-    setShuffleCount(prevShuffleCount => {
-      const updatedCount = prevShuffleCount[methodName] + 1;
-  
-      // If we've gone through all alternatives, reset the count and use the original method name
-      if (updatedCount > originalAlternatives.length) {
-        setCurrentAlts(prevCurrentAlts => ({
-          ...prevCurrentAlts,
-          [methodName]: originalAlternatives
-        }));
-        return {
-          ...prevShuffleCount,
-          [methodName]: 0
-        };
-      } else {
-        // Update the alternatives for the method with the shuffled alternatives
-        setCurrentAlts(prevCurrentAlts => ({
-          ...prevCurrentAlts,
-          [methodName]: shuffledAlternatives
-        }));
-        return {
-          ...prevShuffleCount,
-          [methodName]: updatedCount
-        };
-      }
-    });
-  };
-
-  function shuffleAlternatives(alternatives) {
-    let shuffled = alternatives.slice(); // Create a copy of the alternatives array
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elements
-    }
-    return shuffled;
-  }
-
-  const handleDeleteMethod = (methodName) => {
-    setMethods(prevMethods => prevMethods.filter(method => method !== methodName));
-    const { [methodName]: deletedMethod, ...remainingAlts } = currentAlts;
-    setCurrentAlts(remainingAlts);
-    const { [methodName]: deletedCount, ...remainingCounts } = shuffleCount;
-    setShuffleCount(remainingCounts);
-  };
-
-  const handleNewTopic = () => {
-    setTopics(['Untitled']);
-    setShowDetails(false);
-  };
-
-  const handleRenameTopic = (index) => {
-    const newTopics = [...topics];
-    newTopics[index] = 'Journey one';
-    setTopics(newTopics);
-    setShowDetails(true);
   };
 
   return (
-    <Grid container style={{ height: '100vh' }}>
-      <Grid item style={{ width: '25%', backgroundColor: 'black', color: 'white', padding: '10px' }}>
-        <h3>CUSTOM JOURNEY</h3>
-        <Button style={{width: '90%'}} variant={topics.length === 0 ? "contained" : "outlined"} color="primary" onClick={handleNewTopic}>
-          New Topic
-        </Button>
-        {topics.map((topic, index) => (
-          <div key={index}>
-            <Button
-              variant="contained"
-              style={{ marginTop: '10px', width: '90%' }}
-              onClick={() => handleRenameTopic(index)}
-            >
-              {topic}
-            </Button>
-          </div>
-        ))}
-       {methods && methods.map((method, index) => (
-        <React.Fragment key={index}>
-          <Divider style={{ backgroundColor: 'grey', marginTop: '10px' }} />
-          <Accordion>
-          <AccordionSummary
-            expandIcon={
-              <>
-                <ShuffleIcon onClick={(e) => {
-                  e.stopPropagation();
-                  handleShuffleClick(method);
-                }} />
-                <DeleteIcon onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteMethod(method);
-                }} />
-              </>
-            }
-          >
-            <Typography>
-              {shuffleCount[method] === 0
-                ? method
-                : currentAlts[method] && currentAlts[method][shuffleCount[method] - 1]}
-            </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography>
-                This is a placeholder text paragraph designed to simulate conversation content. It will be replaced with actual chat history in the future.
-              </Typography>
-            </AccordionDetails>
-          </Accordion>
-        </React.Fragment>
-      ))}
-    </Grid>
-    <Grid item xs>
-      <ChatInterface messages={messages} onSendClick={handleSendClick} />
-    </Grid>
-  </Grid>
-  );
+    <Container maxWidth="false" sx={{ height: '100vh', position: 'relative', overflow: 'hidden', padding: 0, margin: 0 }}>
+      <Grid container sx={{ height: '100%' }}>
+        <Grid item xs={3} style={{ backgroundColor: 'black', color: 'white', padding: '10px' }}>
+          <h3>CUSTOM JOURNEY</h3>
+          {methods.map((method, index) => (
+            <React.Fragment key={index}>
+              <Divider style={{ backgroundColor: 'grey', marginTop: '10px' }} />
+              <Accordion>
+                <AccordionSummary
+                 
+                >
+                  <Typography>{method.name}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography>
+                  {method.description}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            </React.Fragment>
+          ))}
+        </Grid>
+        <Grid item xs={9} ref={chatContainerRef} sx={{ height: '100%', overflowY: 'auto', paddingBottom: '180px' /* Adjust this value as needed */ }}>
+          <List sx={{ padding: 0 }}>
+              {messages.map((message, index) => (
+              <React.Fragment key={index}>
+                <ListItem sx={{ justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start' }}>
+                    <Paper elevation={3} sx={{ padding: '10px', maxWidth: '75%', width: '75%', backgroundColor: message.sender === 'user' ? '#e0f7fa' : '#fff', marginLeft: message.sender === 'user' ? 'auto' : 0, marginRight: message.sender === 'friend' ? 'auto' : 0 }}>
+                    <Typography variant="body1">{message.text}</Typography>
+                    </Paper>
+                </ListItem>
+              </React.Fragment>
+              ))}
+          </List>
+        </Grid>
+          <Grid item xs={12} sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px', paddingLeft: '400px' }}>
+          <TextField
+              style={{ backgroundColor: 'white' }}
+              fullWidth
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Type a message..."
+              onKeyPress={(e) => e.key === 'Enter' && handleSendClick(inputValue)}
+              InputProps={{
+                  endAdornment: (
+                      <InputAdornment position="end">
+                          <Button variant="contained" color="primary" onClick={() => handleSendClick(inputValue)}>
+                          Send
+                          </Button>
+                      </InputAdornment>
+                  ),
+              }}
+              />
+          </Grid>
+        </Grid>
+      </Container>
+    );
 }
 
 export default Chat;
