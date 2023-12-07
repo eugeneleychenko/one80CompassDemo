@@ -168,6 +168,8 @@ function Chat() {
           <TextField
               style={{ backgroundColor: 'white' }}
               fullWidth
+              multiline
+              rows={3}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Type a message..."

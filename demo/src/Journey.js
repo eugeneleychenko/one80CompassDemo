@@ -33,13 +33,28 @@ const Journey = () => {
     fetchAIResponses();
   }, []); // Empty dependency array means this effect will only run once after the initial render
 
+  const scrollToMethod = (method) => {
+    const element = document.getElementById(method);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+
   return (
     <Box sx={{ display: 'flex', marginTop: '90px'  }}>
       <Box sx={{ width: '30%', position: 'fixed', top: '90px', left: 0 }}>
         {/* Custom Journey Grid from Chat.js */}
-        <Button style={{width: '90%'}} variant="contained" color="primary">
-          New Topic
-        </Button>
+        {methodsToFetch.map((method, index) => (
+          <Button
+            key={index}
+            style={{ width: '90%', backgroundColor: 'black', color: 'white', marginBottom: '10px' }}
+            variant="contained"
+            onClick={() => scrollToMethod(method)}
+          >
+            {method}
+          </Button>
+        ))}
         {/* The topics list will be dynamically generated */}
         {/* Methods and other interactive elements will go here */}
       </Box>
@@ -47,7 +62,7 @@ const Journey = () => {
         <Typography variant="h3" align="left">Journey Name</Typography>
         <Typography variant="h4" sx={{ mt: 3 }} align="left">Project Description</Typography>
         {methodsToFetch.map((method, index) => (
-          <Box sx={{ my: 3 }} key={method}>
+          <Box sx={{ my: 3 }} key={method} id={method}>
             <Typography variant="h4" align="left">{method}</Typography>
             <Typography variant="body1" sx={{ mt: 3 }} align="left">
               {aiResponses[index]}
