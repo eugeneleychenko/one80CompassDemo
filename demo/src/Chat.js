@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, Button, Container, Grid, List, ListItem, Paper, TextField, Typography, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
+import React, { useState, useRef } from 'react';
+import { Box, Fade, Button, Container, Grid, List, ListItem, Paper, TextField, Typography, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -9,23 +9,18 @@ import { useNavigate } from 'react-router-dom';
 
 
 function Chat() {
+  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const chatContainerRef = useRef(null);
   const [methods, setMethods] = useState([]);
   const [messages, setMessages] = useState([]);
 
-  // making chat look good
-  useEffect(() => {
-    const chat = chatContainerRef.current;
-    if (chat) {
-      const isScrolledToBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 1; // 1 pixel of leeway
-      if (isScrolledToBottom) {
-        chat.scrollBy(0, 800);
-      }
-    }
-  }, [messages]); // Run this effect when 'messages' changes
+  const handleCreateJourneyClick = () => {
+    const newTab = window.open('/journey', '_blank');
+    newTab.focus();
+  };
 
-  const handleSendClick = async (inputValue) => {
+  const handleSendClick = (inputValue) => {
     if (inputValue.trim()) {
       // Add the user's message
       const newUserMessage = {
@@ -33,36 +28,40 @@ function Chat() {
         text: inputValue
       };
 
-      // Add the friend's welcome message
-      const newFriendMessage = {
-        sender: 'friend',
-        text: (
-          <div dangerouslySetInnerHTML={{
-            __html: `<strong>For your project, you can approach it through the following:</strong><br>
-
-<br style="line-height: 0">
-<em>Statement Starters</em>
-<p style="line-height: 0; font-size: 75%">Announce the driving question using Statement Starters</p><br style="line-height: 0">
-<em>Abstraction Laddering</em>
-<p style="line-height: 0; font-size: 75%">Validate that you truly understand the problem</p><br style="line-height: 0">
-<em>Stakeholder Mapping</em>
-<p style="line-height: 0; font-size: 75%">Focus on people using Stakeholder Mapping</p><br style="line-height: 0">
-<em>Interviewing</em>
-<p style="line-height: 0; font-size: 75%">Refine understanding by hearing directly from experts using Interviewing.</p><br style="line-height: 0">
-<em>Contextual inquiry</em>
-<p style="line-height: 0; font-size: 75%">Watch the user in real-time to understand the problem</p><br style="line-height: 0">
-<em>Rose, Thorn, Bud</em>
-<p style="line-height: 0; font-size: 75%">Document Contextual Inquiry and Interview results with Rose, Thorn, Bud</p><br style="line-height: 0">
-<em>Affinity Clustering</em>
-<p style="line-height: 0; font-size: 75%">Group related insights from the Interview</p>`
-          }} />)
-      };
-
-      // Update the messages state with the new messages
-      setMessages(prevMessages => [...prevMessages, newUserMessage, newFriendMessage]);
+      // Update the messages state with the new user message
+      setMessages(prevMessages => [...prevMessages, newUserMessage]);
 
       // Clear the input field
       setInputValue('');
+
+      // Prepare the friend's message
+      const friendMessageText = `<strong>For your project, you can approach it through the following:</strong><br>
+<br style="line-height: 0">
+<em>Statement Starters</em>
+<div style="line-height: 0; font-size: 75%">Announce the driving question using Statement Starters</div><br style="line-height: 0">
+<em>Abstraction Laddering</em>
+<div style="line-height: 0; font-size: 75%">Validate that you truly understand the problem</div><br style="line-height: 0">
+<m>Stakeholder Mapping</em>
+<div style="line-height: 0; font-size: 75%">Focus on people using Stakeholder Mapping</div><br style="line-height: 0">
+<em>Interviewing</em>
+<div style="line-height: 0; font-size: 75%">Refine understanding by hearing directly from experts using Interviewing.</div><br style="line-height: 0">
+<em>Contextual inquiry</em>
+<div style="line-height: 0; font-size: 75%">Watch the user in real-time to understand the problem</div><br style="line-height: 0">
+<em>Rose, Thorn, Bud</em>
+<div style="line-height: 0; font-size: 75%">Document Contextual Inquiry and Interview results with Rose, Thorn, Bud</div><br style="line-height: 0">
+<em>Affinity Clustering</em>
+<div style="line-height: 0; font-size: 75%">Group related insights from the Interview</div>`;
+
+      // Add the friend's message
+      setMessages(prevMessages => [...prevMessages, {
+        sender: 'friend',
+        text: (
+          <div dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(friendMessageText)
+          }} />
+        ),
+        key: Date.now() // Use a unique key to force the update
+      }]);
 
       // Set the methods to be displayed
       setMethods([
@@ -95,9 +94,6 @@ function Chat() {
           description: "Affinity Clustering in Product Thinking is a method used to organize and interpret large volumes of qualitative data by grouping similar items to reveal patterns and themes."
         }
       ]);
-
-      // Fetch the descriptions for the methods
-      
     }
   };
 
@@ -107,9 +103,11 @@ function Chat() {
         <Grid item xs={3} style={{ backgroundColor: 'black', color: 'white', padding: '10px' }}>
           <h3>CUSTOM JOURNEY</h3>
           {methods.map((method, index) => (
+            // <Fade in={true} timeout={500 + index * 500} key={index}>
             <React.Fragment key={index}>
+              
               <Divider style={{ backgroundColor: 'grey', marginTop: '10px' }} />
-              <Accordion>
+              <Accordion className="fade-in">
                 <AccordionSummary
                  
                 >
@@ -121,33 +119,49 @@ function Chat() {
                   </Typography>
                 </AccordionDetails>
               </Accordion>
+              
             </React.Fragment>
+            // </Fade>
           ))}
         </Grid>
         <Grid item xs={9} ref={chatContainerRef} sx={{ height: '100%', overflowY: 'auto', paddingBottom: '180px' /* Adjust this value as needed */ }}>
           <List sx={{ padding: 0 }}>
           {messages.map((message, index) => (
-  <React.Fragment key={index}>
-    <ListItem sx={{ justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start' }}>
-      <Paper elevation={3} sx={{ padding: '10px', maxWidth: '75%', width: '75%', backgroundColor: message.sender === 'user' ? '#e0f7fa' : '#fff', marginLeft: message.sender === 'user' ? 'auto' : 0, marginRight: message.sender === 'friend' ? 'auto' : 0 }}>
-        <Typography variant="body1">
-          {typeof message.text === 'string' ? (
-            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.text) }} />
-          ) : (
-            message.text
-          )}
-        </Typography>
-      </Paper>
-    </ListItem>
-    {message.sender === 'friend' && index === messages.length - 1 && (
-      <ListItem sx={{ justifyContent: 'left' }}>
-        <Button variant="contained" color="primary">
-          Create Custom Journey from Answer
-        </Button>
-      </ListItem>
-    )}
-  </React.Fragment>
-))}
+            <React.Fragment key={message.key || index}>
+              {message.sender === 'friend' ? (
+                <Fade in={true} timeout={5000}>
+                  <ListItem sx={{ justifyContent: 'flex-start' }}>
+                    <Paper elevation={3} sx={{ padding: '10px', maxWidth: '75%', width: '75%', backgroundColor: '#fff', marginRight: 'auto' }}>
+                      <Typography variant="body1" component="div">
+                        {message.text}
+                      </Typography>
+                    </Paper>
+                  </ListItem>
+                </Fade>
+              ) : (
+                <ListItem sx={{ justifyContent: 'flex-end' }}>
+                  <Paper elevation={3} sx={{ padding: '10px', maxWidth: '75%', width: '75%', backgroundColor: '#e0f7fa', marginLeft: 'auto' }}>
+                    <Typography variant="body1" component="div">
+                      {typeof message.text === 'string' ? (
+                        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.text) }} />
+                      ) : (
+                        message.text
+                      )}
+                    </Typography>
+                  </Paper>
+                </ListItem>
+              )}
+              {message.sender === 'friend' && index === messages.length - 1 && (
+                <Fade in={true} timeout={5000}>
+                  <ListItem sx={{ justifyContent: 'left' }}>
+                    <Button variant="contained" color="primary" onClick={handleCreateJourneyClick}>
+                      Create Custom Journey from Answer
+                    </Button>
+                  </ListItem>
+                </Fade>
+              )}
+            </React.Fragment>
+          ))}
           </List>
         </Grid>
           <Grid item xs={12} sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px', paddingLeft: '400px' }}>
@@ -175,3 +189,4 @@ function Chat() {
 }
 
 export default Chat;
+

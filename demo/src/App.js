@@ -1,8 +1,7 @@
 import logo from './logo.svg';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-   import Chat from './Chat';
+import Chat from './Chat';
 import './App.css';
-import Chat from './Chat.js';
 import Journey from './Journey';
 
 function App() {
