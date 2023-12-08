@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Box, Fade, Button, Container, Grid, List, ListItem, Paper, TextField, Typography, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -10,6 +10,7 @@ import { OpenAI } from "langchain/llms/openai";
 import { ChatOpenAI} from "langchain/chat_models/openai"
 import { PromptTemplate} from "langchain/prompts";
 import {LLMChain} from "langchain/chains"
+import MethodsContext from './MethodsContext';
 
 function Chat() {
   // console.log(process.env.REACT_APP_OPENAI_API_KEY)
@@ -17,7 +18,9 @@ function Chat() {
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const chatContainerRef = useRef(null);
-  const [methods, setMethods] = useState([]);
+  const contextValue = useContext(MethodsContext);
+  console.log(contextValue); // This should show you what's actually in the context
+  const { methods, setMethods } = contextValue;
   const [messages, setMessages] = useState([]);
   const [openAI, setOpenAI] = useState(null)
 
@@ -31,6 +34,7 @@ function Chat() {
   
 
   const handleCreateJourneyClick = () => {
+    localStorage.setItem('methods', JSON.stringify(methods));
     const newTab = window.open('/journey', '_blank');
     newTab.focus();
   };
@@ -68,7 +72,7 @@ function Chat() {
 <div style="margin-left: 10px; line-height: 0; font-size: 75%">Focus on people using Stakeholder Mapping</div><br style="line-height: 0">
 <em>Interviewing</em>
 <div style="margin-left: 10px; line-height: 0; font-size: 75%">Refine understanding by hearing directly from experts using Interviewing.</div><br style="line-height: 0">
-<em>Contextual inquiry</em>
+<em>Contextual Inquiry</em>
 <div style="margin-left: 10px; line-height: 0; font-size: 75%">Watch the user in real-time to understand the problem</div><br style="line-height: 0">
 <em>Rose, Thorn, Bud</em>
 <div style="margin-left: 10px; line-height: 0; font-size: 75%">Document Contextual Inquiry and Interview results with Rose, Thorn, Bud</div><br style="line-height: 0">
@@ -92,7 +96,7 @@ function Chat() {
             description: "Interviewing is a key method for gathering qualitative insights, where structured or semi-structured conversations are held with users or potential customers to understand their needs, experiences, and perceptions. "
           },
           {
-            name: 'Contextual inquiry',
+            name: 'Contextual Inquiry',
             description: "Contextual Inquiry in Product Thinking is a research approach where user behavior is observed and analyzed in their natural environment, providing genuine insights into how they interact with a product or service in real-life situations."
           },
           {

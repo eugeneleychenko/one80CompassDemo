@@ -1,25 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Box, Typography, Paper, Button } from '@mui/material';
 import VideocamIcon from '@mui/icons-material/Videocam';
 
 
 const Journey = () => {
+  const [methods, setMethods] = useState([]);
   const [aiResponses, setAiResponses] = useState([]);
-  const methodsToFetch = [
-    'Statement Starters',
-    'Abstraction Laddering',
-    'Stakeholder Mapping',
-    'Interviewing',
-    'Contextual Inquiry',
-    'Rose, Thorn, Bud',
-    'Affinity Clustering'
-  ];
+  const methodsToFetch = methods.map(method => method.name);
+
+  
 
   useEffect(() => {
     async function fetchAIResponses() {
+      
       const url = 'https://gs.jasonaa.me/?url=https://docs.google.com/spreadsheets/d/e/2PACX-1vSmp889ksBKKVVwpaxhlIzpDzXNOWjnszEXBP7SC5AyoebSIBFuX5qrcwwv6ud4RCYw2t_BZRhGLT0u/pubhtml?gid=1980586524&single=true';
     
       try {
+        const storedMethods = localStorage.getItem('methods');
+        if (storedMethods) {
+          setMethods(JSON.parse(storedMethods));
+        }
         const response = await fetch(url);
         const data = await response.json();
         // Create a map for easy lookup of AI Responses by method name
@@ -33,7 +33,7 @@ const Journey = () => {
     }
   
     fetchAIResponses();
-  }, []); // Empty dependency array means this effect will only run once after the initial render
+  }, [methods]); // Empty dependency array means this effect will only run once after the initial render
 
   const scrollToMethod = (method) => {
     const element = document.getElementById(method);
