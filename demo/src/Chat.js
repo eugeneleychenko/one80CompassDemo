@@ -7,6 +7,7 @@ import './App.css';
 import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
 import { OpenAI } from "langchain/llms/openai";
+import { ChatOpenAI} from "langchain/chat_models/openai"
 import { PromptTemplate} from "langchain/prompts";
 import {LLMChain} from "langchain/chains"
 
@@ -146,9 +147,9 @@ function Chat() {
         ];
       } else {
         // Construct an LLMChain from a PromptTemplate and an LLM for design thinking expertise
-        const model = new OpenAI({ temperature: 0.5, openAIApiKey: process.env.REACT_APP_OPENAI_API_KEY,  });
+        const model = new ChatOpenAI({ temperature: 0.5, openAIApiKey: process.env.REACT_APP_OPENAI_API_KEY, model: "gpt-3.5-turbo-16k"  });
         const prompt = PromptTemplate.fromTemplate(
-          "You are a design thinking, product thinking, and user experience expert. I am working on a new feature for my product that allows people to reserve a cubical at our office. {{inputValue}}"
+          `You are a design thinking, product thinking, and user experience expert. Keep it short and sweet. ${inputValue}`
         );
         const chain = new LLMChain({ llm: model, prompt });
 
