@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Box, Fade, Button, Container, Grid, List, ListItem, Paper, TextField, Typography, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -6,21 +6,35 @@ import InputAdornment from '@mui/material/InputAdornment';
 import './App.css';
 import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
-
+import { OpenAI } from "langchain/llms/openai";
+import { PromptTemplate} from "langchain/prompts";
+import {LLMChain} from "langchain/chains"
 
 function Chat() {
+  // console.log(process.env.REACT_APP_OPENAI_API_KEY)
+  
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const chatContainerRef = useRef(null);
   const [methods, setMethods] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [openAI, setOpenAI] = useState(null)
+
+  useEffect(() => {
+    const aimodel = new OpenAI({
+      openAIApiKey: process.env.REACT_APP_OPENAI_API_KEY,
+      temperature: 0.5
+    });
+    setOpenAI(aimodel);
+  }, []);
+  
 
   const handleCreateJourneyClick = () => {
     const newTab = window.open('/journey', '_blank');
     newTab.focus();
   };
 
-  const handleSendClick = (inputValue) => {
+  const handleSendClick = async (inputValue) => {
     if (inputValue.trim()) {
       // Add the user's message
       const newUserMessage = {
@@ -33,24 +47,123 @@ function Chat() {
 
       // Clear the input field
       setInputValue('');
+      console.log('inputValue:', inputValue);
 
-      // Prepare the friend's message
-      const friendMessageText = `<strong>For your project, you can approach it through the following:</strong><br>
+      if (typeof inputValue !== 'string') {
+        console.error('inputValue is not a string:', inputValue);
+        return}
+
+      // Determine the friend's message based on the input
+      let friendMessageText;
+      let newMethods = methods;
+      if (inputValue.includes('existing')) {
+        friendMessageText = `<strong>For your project, you can approach it through the following:</strong><br>
 <br style="line-height: 0">
 <em>Statement Starters</em>
-<div style="line-height: 0; font-size: 75%">Announce the driving question using Statement Starters</div><br style="line-height: 0">
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Announce the driving question using Statement Starters</div><br style="line-height: 0">
 <em>Abstraction Laddering</em>
-<div style="line-height: 0; font-size: 75%">Validate that you truly understand the problem</div><br style="line-height: 0">
-<m>Stakeholder Mapping</em>
-<div style="line-height: 0; font-size: 75%">Focus on people using Stakeholder Mapping</div><br style="line-height: 0">
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Validate that you truly understand the problem</div><br style="line-height: 0">
+<em>Stakeholder Mapping</em>
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Focus on people using Stakeholder Mapping</div><br style="line-height: 0">
 <em>Interviewing</em>
-<div style="line-height: 0; font-size: 75%">Refine understanding by hearing directly from experts using Interviewing.</div><br style="line-height: 0">
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Refine understanding by hearing directly from experts using Interviewing.</div><br style="line-height: 0">
 <em>Contextual inquiry</em>
-<div style="line-height: 0; font-size: 75%">Watch the user in real-time to understand the problem</div><br style="line-height: 0">
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Watch the user in real-time to understand the problem</div><br style="line-height: 0">
 <em>Rose, Thorn, Bud</em>
-<div style="line-height: 0; font-size: 75%">Document Contextual Inquiry and Interview results with Rose, Thorn, Bud</div><br style="line-height: 0">
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Document Contextual Inquiry and Interview results with Rose, Thorn, Bud</div><br style="line-height: 0">
 <em>Affinity Clustering</em>
-<div style="line-height: 0; font-size: 75%">Group related insights from the Interview</div>`;
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Group related insights from the Interview</div>`;
+        newMethods = [
+          {
+            name: 'Statement Starters',
+            description: "The 'Statement Starter' method in Product Thinking is a technique used to spark innovative and collaborative discussions about a product or service."
+          },
+          {
+            name: 'Abstraction Laddering',
+            description: "Abstraction Laddering in Product Thinking is a method that facilitates a deeper understanding of product issues by exploring them at different levels of abstraction. "
+          },
+          {
+            name: 'Stakeholder Mapping',
+            description: "Stakeholder Mapping in Product Thinking is a strategic method for identifying and organizing all relevant individuals or groups involved with a product, such as customers, team members, investors, and suppliers. "
+          },
+          {
+            name: 'Interviewing',
+            description: "Interviewing is a key method for gathering qualitative insights, where structured or semi-structured conversations are held with users or potential customers to understand their needs, experiences, and perceptions. "
+          },
+          {
+            name: 'Contextual inquiry',
+            description: "Contextual Inquiry in Product Thinking is a research approach where user behavior is observed and analyzed in their natural environment, providing genuine insights into how they interact with a product or service in real-life situations."
+          },
+          {
+            name: 'Rose, Thorn, Bud',
+            description: "The 'Rose, Thorn, Bud' method in Product Thinking is a straightforward approach for evaluating products, where 'Rose' represents the positive aspects or what's working well, 'Thorn' identifies the challenges or areas needing improvement, and 'Bud' signifies potential opportunities or ideas for growth."
+          },
+          {
+            name: 'Affinity Clustering',
+            description: "Affinity Clustering in Product Thinking is a method used to organize and interpret large volumes of qualitative data by grouping similar items to reveal patterns and themes."
+          }
+        ];
+      } else if (inputValue.includes('potential')) {
+        friendMessageText = `<strong>For your project, you can approach it through the following:</strong><br>
+<br style="line-height: 0">
+<em>Statement Starters</em>
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Announce the driving question using Statement Starters</div><br style="line-height: 0">
+<em>Abstraction Laddering</em>
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Validate that you truly understand the problem</div><br style="line-height: 0">
+<em>Stakeholder Mapping</em>
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Focus on people using Stakeholder Mapping</div><br style="line-height: 0">
+<em>Survey</em>
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Refine understanding by hearing directly from experts using Interviewing.</div><br style="line-height: 0">
+<em>Rose, Thorn, Bud</em>
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Document Contextual Inquiry and Interview results with Rose, Thorn, Bud</div><br style="line-height: 0">
+<em>Affinity Clustering</em>
+<div style="margin-left: 10px; line-height: 0; font-size: 75%">Group related insights from the Interview</div>`;
+        newMethods = [
+          {
+            name: 'Statement Starters',
+            description: "The 'Statement Starter' method in Product Thinking is a technique used to spark innovative and collaborative discussions about a product or service."
+          },
+          {
+            name: 'Abstraction Laddering',
+            description: "Abstraction Laddering in Product Thinking is a method that facilitates a deeper understanding of product issues by exploring them at different levels of abstraction. "
+          },
+          {
+            name: 'Stakeholder Mapping',
+            description: "Stakeholder Mapping in Product Thinking is a strategic method for identifying and organizing all relevant individuals or groups involved with a product, such as customers, team members, investors, and suppliers. "
+          },
+          {
+            name: 'Survey',
+            description: "Surveys in Product Thinking are a method for collecting a wide range of user data, both quantitative and qualitative, to inform product development decisions."
+          },
+          {
+            name: 'Rose, Thorn, Bud',
+            description: "The 'Rose, Thorn, Bud' method in Product Thinking is a straightforward approach for evaluating products, where 'Rose' represents the positive aspects or what's working well, 'Thorn' identifies the challenges or areas needing improvement, and 'Bud' signifies potential opportunities or ideas for growth."
+          },
+          {
+            name: 'Affinity Clustering',
+            description: "Affinity Clustering in Product Thinking is a method used to organize and interpret large volumes of qualitative data by grouping similar items to reveal patterns and themes."
+          }
+        ];
+      } else {
+        // Construct an LLMChain from a PromptTemplate and an LLM for design thinking expertise
+        const model = new OpenAI({ temperature: 0.5, openAIApiKey: process.env.REACT_APP_OPENAI_API_KEY,  });
+        const prompt = PromptTemplate.fromTemplate(
+          "You are a design thinking, product thinking, and user experience expert. I am working on a new feature for my product that allows people to reserve a cubical at our office. {{inputValue}}"
+        );
+        const chain = new LLMChain({ llm: model, prompt });
+
+        // The result is an object with a `text` property.
+        if (openAI) {
+          console.log('OpenAI is initialized, sending prompt to LLMChain');
+          const res = await chain.call({ inputValue });
+          console.log('Response from LLMChain:', res);
+          friendMessageText = res.text;
+        } else {
+          console.log('OpenAI is not initialized, cannot send message');
+          friendMessageText = 'Unable to send message. OpenAI is not initialized.';
+        }
+        newMethods = [];
+      }
 
       // Add the friend's message
       setMessages(prevMessages => [...prevMessages, {
@@ -64,36 +177,7 @@ function Chat() {
       }]);
 
       // Set the methods to be displayed
-      setMethods([
-        {
-          name: 'Statement Starters',
-          description: "The 'Statement Starter' method in Product Thinking is a technique used to spark innovative and collaborative discussions about a product or service."
-        },
-        {
-          name: 'Abstraction Laddering',
-          description: "Abstraction Laddering in Product Thinking is a method that facilitates a deeper understanding of product issues by exploring them at different levels of abstraction. "
-        },
-        {
-          name: 'Stakeholder Mapping',
-          description: "Stakeholder Mapping in Product Thinking is a strategic method for identifying and organizing all relevant individuals or groups involved with a product, such as customers, team members, investors, and suppliers. "
-        },
-        {
-          name: 'Interviewing',
-          description: "Interviewing is a key method for gathering qualitative insights, where structured or semi-structured conversations are held with users or potential customers to understand their needs, experiences, and perceptions. "
-        },
-        {
-          name: 'Contextual inquiry',
-          description: "Contextual Inquiry in Product Thinking is a research approach where user behavior is observed and analyzed in their natural environment, providing genuine insights into how they interact with a product or service in real-life situations."
-        },
-        {
-          name: 'Rose, Thorn, Bud',
-          description: "The 'Rose, Thorn, Bud' method in Product Thinking is a straightforward approach for evaluating products, where 'Rose' represents the positive aspects or what's working well, 'Thorn' identifies the challenges or areas needing improvement, and 'Bud' signifies potential opportunities or ideas for growth."
-        },
-        {
-          name: 'Affinity Clustering',
-          description: "Affinity Clustering in Product Thinking is a method used to organize and interpret large volumes of qualitative data by grouping similar items to reveal patterns and themes."
-        }
-      ]);
+      setMethods(newMethods);
     }
   };
 
@@ -103,14 +187,10 @@ function Chat() {
         <Grid item xs={3} style={{ backgroundColor: 'black', color: 'white', padding: '10px' }}>
           <h3>CUSTOM JOURNEY</h3>
           {methods.map((method, index) => (
-            // <Fade in={true} timeout={500 + index * 500} key={index}>
             <React.Fragment key={index}>
-              
               <Divider style={{ backgroundColor: 'grey', marginTop: '10px' }} />
               <Accordion className="fade-in">
-                <AccordionSummary
-                 
-                >
+                <AccordionSummary>
                   <Typography>{method.name}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -119,9 +199,7 @@ function Chat() {
                   </Typography>
                 </AccordionDetails>
               </Accordion>
-              
             </React.Fragment>
-            // </Fade>
           ))}
         </Grid>
         <Grid item xs={9} ref={chatContainerRef} sx={{ height: '100%', overflowY: 'auto', paddingBottom: '180px' /* Adjust this value as needed */ }}>
@@ -169,7 +247,6 @@ function Chat() {
               style={{ backgroundColor: 'white' }}
               fullWidth
               multiline
-              rows={3}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Type a message..."
@@ -183,6 +260,10 @@ function Chat() {
                       </InputAdornment>
                   ),
               }}
+                  inputProps={{
+                    style: { minHeight: '1em' } 
+                  
+              }}
               />
           </Grid>
         </Grid>
@@ -191,4 +272,6 @@ function Chat() {
 }
 
 export default Chat;
+
+
 

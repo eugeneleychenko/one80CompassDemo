@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Button } from '@mui/material';
+import VideocamIcon from '@mui/icons-material/Videocam';
+
 
 const Journey = () => {
   const [aiResponses, setAiResponses] = useState([]);
@@ -43,12 +45,12 @@ const Journey = () => {
 
   return (
     <Box sx={{ display: 'flex', marginTop: '90px'  }}>
-      <Box sx={{ width: '30%', position: 'fixed', top: '90px', left: 0 }}>
+      <Box sx={{ width: '30%', position: 'fixed', top: '90px', left: '20px' }}>
         {/* Custom Journey Grid from Chat.js */}
         {methodsToFetch.map((method, index) => (
           <Button
             key={index}
-            style={{ width: '90%', backgroundColor: 'black', color: 'white', marginBottom: '10px' }}
+            style={{ width: '90%', backgroundColor: 'black', color: 'white', marginBottom: '10px', ml: '20px' }}
             variant="contained"
             onClick={() => scrollToMethod(method)}
           >
@@ -58,16 +60,23 @@ const Journey = () => {
         {/* The topics list will be dynamically generated */}
         {/* Methods and other interactive elements will go here */}
       </Box>
-      <Box sx={{ width: '70%', ml: '30%' }}>
+      <Box sx={{  ml: '30%', pr: '20px' }}>
         <Typography variant="h3" align="left">Journey Name</Typography>
         <Typography variant="h4" sx={{ mt: 3 }} align="left">Project Description</Typography>
         {methodsToFetch.map((method, index) => (
-          <Box sx={{ my: 3 }} key={method} id={method}>
-            <Typography variant="h4" align="left">{method}</Typography>
-            <Typography variant="body1" sx={{ mt: 3 }} align="left">
-              {aiResponses[index]}
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', my: 3, pr: '20px' }} key={method} id={method}>
+            <Box sx={{ width: '50%' }}>
+              <Typography variant="h4" align="left">{method}</Typography>
+              <Typography variant="body1" sx={{ mt: 3 }} align="left">
+                {aiResponses[index]}
+              </Typography>
+            </Box>
+            <Box sx={{ width: '50%', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e0e0e0', pl: '20px' }}>
+              <VideocamIcon sx={{ fontSize: 60 }} />
+            </Box>
           </Box>
+          
+       
         ))}
         
       </Box>
