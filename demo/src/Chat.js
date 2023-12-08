@@ -163,7 +163,7 @@ function Chat() {
           console.log('OpenAI is not initialized, cannot send message');
           friendMessageText = 'Unable to send message. OpenAI is not initialized.';
         }
-        newMethods = [];
+        newMethods = methods;
       }
 
       // Add the friend's message
