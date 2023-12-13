@@ -11,6 +11,7 @@ import { ChatOpenAI} from "langchain/chat_models/openai"
 import { PromptTemplate} from "langchain/prompts";
 import {LLMChain} from "langchain/chains"
 import MethodsContext from './MethodsContext';
+import { marked } from 'marked';
 
 function Chat() {
   // console.log(process.env.REACT_APP_OPENAI_API_KEY)
@@ -19,7 +20,7 @@ function Chat() {
   const [inputValue, setInputValue] = useState('');
   const chatContainerRef = useRef(null);
   const contextValue = useContext(MethodsContext);
-  console.log(contextValue); // This should show you what's actually in the context
+  // console.log(contextValue); // This should show you what's actually in the context
   const { methods, setMethods } = contextValue;
   const [messages, setMessages] = useState([]);
   const [openAI, setOpenAI] = useState(null)
@@ -52,7 +53,7 @@ function Chat() {
 
       // Clear the input field
       setInputValue('');
-      console.log('inputValue:', inputValue);
+      // console.log('inputValue:', inputValue);
 
       if (typeof inputValue !== 'string') {
         console.error('inputValue is not a string:', inputValue);
@@ -151,21 +152,54 @@ function Chat() {
         ];
       } else {
         // Construct an LLMChain from a PromptTemplate and an LLM for design thinking expertise
-        const model = new ChatOpenAI({ temperature: 0.5, openAIApiKey: process.env.REACT_APP_OPENAI_API_KEY, model: "gpt-3.5-turbo-16k"  });
-        const prompt = PromptTemplate.fromTemplate(
-          `You are a design thinking, product thinking, and user experience expert. Keep it short and sweet. ${inputValue}`
-        );
-        const chain = new LLMChain({ llm: model, prompt });
+        const url = "http://0.0.0.0:8000/get_recipe";
+        const data = { "recipe_name": inputValue };
+        const headers = { "Content-type": "application/json" };
 
-        // The result is an object with a `text` property.
-        if (openAI) {
-          console.log('OpenAI is initialized, sending prompt to LLMChain');
-          const res = await chain.call({ inputValue });
-          console.log('Response from LLMChain:', res);
-          friendMessageText = res.text;
-        } else {
-          console.log('OpenAI is not initialized, cannot send message');
-          friendMessageText = 'Unable to send message. OpenAI is not initialized.';
+        let messageKey = Date.now(); // Create a unique key for the message
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(data)
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const reader = response.body.getReader();
+          let friendMessageChunks = '';
+          
+        
+          // Add an initial message to indicate loading or that the message is being received
+          setMessages(prevMessages => [...prevMessages, {
+            sender: 'friend',
+            text: 'Loading...',
+            key: messageKey
+          }]);
+        
+          reader.read().then(function processText({ done, value }) {
+            friendMessageChunks += new TextDecoder("utf-8").decode(value);
+            // Update the existing message with the new chunk or the final content
+            setMessages(prevMessages => prevMessages.map(msg => 
+              msg.key === messageKey ? { ...msg, text: (
+                <div dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(marked(friendMessageChunks)) 
+                }} />
+              )} : msg
+            ));
+        
+            if (!done) {
+              // Continue reading the next chunk
+              return reader.read().then(processText);
+            }
+          });
+        } catch (error) {
+          console.error('Error sending message:', error);
+          friendMessageText = 'Unable to send message. An error occurred.';
+          // Update the existing message to show the error instead of adding a new one
+          setMessages(prevMessages => prevMessages.map(msg => 
+            msg.key === messageKey ? { ...msg, text: friendMessageText } : msg
+          ));
         }
         newMethods = methods;
       }
